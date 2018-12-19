@@ -15,7 +15,8 @@ python src/train_softmax.py \
 --weight_decay 5e-4 \
 --embedding_size 512 \
 --validation_set_split_ratio 0.05 \
---validate_every_n_epochs 1 \
+--validate_every_n_epochs 10 \
 --prelogits_norm_loss_factor 5e-4 \
 --epoch_size=1 \
---batch_size=90 
+--batch_size=4 \
+--gpu_memory_fraction=0.8

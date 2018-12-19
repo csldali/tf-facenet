@@ -62,6 +62,7 @@ def block17(net, scale=1.0, activation_fn=tf.nn.relu, scope=None, reuse=None):
         mixed = tf.concat([tower_conv, tower_conv1_2], 3)
         up = slim.conv2d(mixed, net.get_shape()[3], 1, normalizer_fn=None,
                          activation_fn=None, scope='Conv2d_1x1')
+       
         net += scale * up
         if activation_fn:
             net = activation_fn(net)
@@ -179,54 +180,68 @@ def inception_resnet_v1(inputs, is_training=True,
                 net = slim.conv2d(inputs, 32, 3, stride=2, padding='VALID',
                                   scope='Conv2d_1a_3x3')
                 end_points['Conv2d_1a_3x3'] = net
+                print('Conv2d_1a_3x3', net.get_shape())
                 # 147 x 147 x 32
                 net = slim.conv2d(net, 32, 3, padding='VALID',
                                   scope='Conv2d_2a_3x3')
                 end_points['Conv2d_2a_3x3'] = net
+                print('Conv2d_2a_3x3', net.get_shape())
                 # 147 x 147 x 64
                 net = slim.conv2d(net, 64, 3, scope='Conv2d_2b_3x3')
                 end_points['Conv2d_2b_3x3'] = net
+                print('Conv2d_2b_3x3', net.get_shape())
                 # 73 x 73 x 64
                 net = slim.max_pool2d(net, 3, stride=2, padding='VALID',
                                       scope='MaxPool_3a_3x3')
                 end_points['MaxPool_3a_3x3'] = net
+                print('MaxPool_3a_3x3', net.get_shape())
                 # 73 x 73 x 80
                 net = slim.conv2d(net, 80, 1, padding='VALID',
                                   scope='Conv2d_3b_1x1')
                 end_points['Conv2d_3b_1x1'] = net
+                print('Conv2d_3b_1x1', net.get_shape())
                 # 71 x 71 x 192
                 net = slim.conv2d(net, 192, 3, padding='VALID',
                                   scope='Conv2d_4a_3x3')
                 end_points['Conv2d_4a_3x3'] = net
+                print('Conv2d_4a_3x3', net.get_shape())
                 # 35 x 35 x 256
                 net = slim.conv2d(net, 256, 3, stride=2, padding='VALID',
                                   scope='Conv2d_4b_3x3')
                 end_points['Conv2d_4b_3x3'] = net
+                print('Conv2d_4b_3x3', net.get_shape())
                 
                 # 5 x Inception-resnet-A
                 net = slim.repeat(net, 5, block35, scale=0.17)
                 end_points['Mixed_5a'] = net
+                print('Mixed_5a', net.get_shape())
         
                 # Reduction-A
                 with tf.variable_scope('Mixed_6a'):
                     net = reduction_a(net, 192, 192, 256, 384)
                 end_points['Mixed_6a'] = net
+                print('Mixed_6a', net.get_shape())
+        
                 
                 # 10 x Inception-Resnet-B
                 net = slim.repeat(net, 10, block17, scale=0.10)
                 end_points['Mixed_6b'] = net
+                print('Mixed_6b', net.get_shape())
                 
                 # Reduction-B
                 with tf.variable_scope('Mixed_7a'):
                     net = reduction_b(net)
                 end_points['Mixed_7a'] = net
+                print('Mixed_7a', net.get_shape())
                 
                 # 5 x Inception-Resnet-C
                 net = slim.repeat(net, 5, block8, scale=0.20)
                 end_points['Mixed_8a'] = net
+                print('Mixed_8a', net.get_shape())
                 
                 net = block8(net, activation_fn=None)
                 end_points['Mixed_8b'] = net
+                print('Mixed_8b', net.get_shape())
                 
                 with tf.variable_scope('Logits'):
                     end_points['PrePool'] = net
@@ -239,8 +254,9 @@ def inception_resnet_v1(inputs, is_training=True,
                                        scope='Dropout')
           
                     end_points['PreLogitsFlatten'] = net
-                
+                    print('PreLogitsFlatten', net.get_shape())
                 net = slim.fully_connected(net, bottleneck_layer_size, activation_fn=None, 
                         scope='Bottleneck', reuse=False)
+                print('Bottleneck-out', net.get_shape())
   
     return net, end_points
