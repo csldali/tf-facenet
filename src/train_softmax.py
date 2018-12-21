@@ -44,6 +44,8 @@ from tensorflow.python.ops import data_flow_ops
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 
+import debug
+
 def main(args):
   
     network = importlib.import_module(args.model_def)
@@ -179,7 +181,18 @@ def main(args):
         # Build a Graph that trains the model with one batch of examples and updates the model parameters
         train_op = facenet.train(total_loss, global_step, args.optimizer, 
             learning_rate, args.moving_average_decay, tf.global_variables(), args.log_histograms)
-        
+
+        # Get prob tensors
+        probe_list = []
+        all_ops = tf.get_default_graph().get_operations()
+        for op in all_ops:
+            tensors = op.outputs
+            for t in tensors:
+                if 'probe' in t.name:
+                    # print(t.name)
+                    probe_list.append(t)
+
+
         # Create a saver
         saver = tf.train.Saver(tf.trainable_variables(), max_to_keep=3)
 
@@ -231,7 +244,7 @@ def main(args):
                     learning_rate_placeholder, phase_train_placeholder, batch_size_placeholder, control_placeholder, global_step, 
                     total_loss, train_op, summary_op, summary_writer, regularization_losses, args.learning_rate_schedule_file,
                     stat, cross_entropy_mean, accuracy, learning_rate,
-                    prelogits, prelogits_center_loss, args.random_rotate, args.random_crop, args.random_flip, prelogits_norm, args.prelogits_hist_max, args.use_fixed_image_standardization)
+                    prelogits, prelogits_center_loss, args.random_rotate, args.random_crop, args.random_flip, prelogits_norm, args.prelogits_hist_max, args.use_fixed_image_standardization, probe_list)
                 stat['time_train'][epoch-1] = time.time() - t
                 
                 if not cont:
@@ -293,11 +306,12 @@ def filter_dataset(dataset, data_filename, percentile, min_nrof_images_per_class
 
     return filtered_dataset
   
-def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_op, image_paths_placeholder, labels_placeholder, 
+def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_op, image_paths_placeholder, labels_placeholder,
       learning_rate_placeholder, phase_train_placeholder, batch_size_placeholder, control_placeholder, step, 
       loss, train_op, summary_op, summary_writer, reg_losses, learning_rate_schedule_file, 
       stat, cross_entropy_mean, accuracy, 
-      learning_rate, prelogits, prelogits_center_loss, random_rotate, random_crop, random_flip, prelogits_norm, prelogits_hist_max, use_fixed_image_standardization):
+      learning_rate, prelogits, prelogits_center_loss, random_rotate, random_crop, random_flip, prelogits_norm,
+      prelogits_hist_max, use_fixed_image_standardization, probe_list):
     batch_number = 0
     
     if args.learning_rate>0.0:
@@ -324,9 +338,20 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
     while batch_number < args.epoch_size:
         start_time = time.time()
         feed_dict = {learning_rate_placeholder: lr, phase_train_placeholder:True, batch_size_placeholder:args.batch_size}
-        tensor_list = [loss, train_op, step, reg_losses, prelogits, cross_entropy_mean, learning_rate, prelogits_norm, accuracy, prelogits_center_loss]
+        tensor_list = [loss, train_op, step, reg_losses, prelogits, cross_entropy_mean, learning_rate, prelogits_norm,
+                       accuracy, prelogits_center_loss]
         if batch_number % 100 == 0:
-            loss_, _, step_, reg_losses_, prelogits_, cross_entropy_mean_, lr_, prelogits_norm_, accuracy_, center_loss_, summary_str = sess.run(tensor_list + [summary_op], feed_dict=feed_dict)
+            # loss_, _, step_, reg_losses_, prelogits_, cross_entropy_mean_, lr_, prelogits_norm_, accuracy_, \
+            # center_loss_, summary_str = sess.run(tensor_list + [summary_op], feed_dict=feed_dict)
+
+            train_outputs = sess.run(tensor_list + [summary_op] + probe_list, feed_dict=feed_dict)
+            loss_, _, step_, reg_losses_, prelogits_, cross_entropy_mean_, lr_, prelogits_norm_, accuracy_, \
+            center_loss_, summary_str = train_outputs[0:11]
+
+            assert len(probe_list) == len(train_outputs[11:])
+            tensors = zip(probe_list, train_outputs[11:])
+            debug.tensor_hook(tensors, 'train_probe/pic_{}'.format(batch_number))
+
             summary_writer.add_summary(summary_str, global_step=step_)
         else:
             loss_, _, step_, reg_losses_, prelogits_, cross_entropy_mean_, lr_, prelogits_norm_, accuracy_, center_loss_ = sess.run(tensor_list, feed_dict=feed_dict)

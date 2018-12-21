@@ -41,6 +41,8 @@ from sklearn import metrics
 from scipy.optimize import brentq
 from scipy import interpolate
 
+import debug
+
 def main(args):
   
     with tf.Graph().as_default():
@@ -74,18 +76,28 @@ def main(args):
 
             # Get output tensor
             embeddings = tf.get_default_graph().get_tensor_by_name("embeddings:0")
-#              
+
+            # Get prob tensors
+            probe_list = []
+            all_ops = tf.get_default_graph().get_operations()
+            for op in all_ops:
+                tensors = op.outputs
+                for t in tensors:
+                    if 'probe' in t.name:
+                        # print(t.name)
+                        probe_list.append(t)
+
             coord = tf.train.Coordinator()
             tf.train.start_queue_runners(coord=coord, sess=sess)
 
             evaluate(sess, eval_enqueue_op, image_paths_placeholder, labels_placeholder, phase_train_placeholder, batch_size_placeholder, control_placeholder,
                 embeddings, label_batch, paths, actual_issame, args.lfw_batch_size, args.lfw_nrof_folds, args.distance_metric, args.subtract_mean,
-                args.use_flipped_images, args.use_fixed_image_standardization)
+                args.use_flipped_images, args.use_fixed_image_standardization, probe_list)
 
             
                           
 def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phase_train_placeholder, batch_size_placeholder, control_placeholder,
-        embeddings, labels, image_paths, actual_issame, batch_size, nrof_folds, distance_metric, subtract_mean, use_flipped_images, use_fixed_image_standardization):
+        embeddings, labels, image_paths, actual_issame, batch_size, nrof_folds, distance_metric, subtract_mean, use_flipped_images, use_fixed_image_standardization, probe_list):
     # Run forward pass to calculate embeddings
     print('Runnning forward pass on LFW images')
     
@@ -108,9 +120,19 @@ def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phas
     nrof_batches = nrof_images // batch_size
     emb_array = np.zeros((nrof_images, embedding_size))
     lab_array = np.zeros((nrof_images,))
+
+    probe_list.insert(0, embeddings)
+    probe_list.insert(1, labels)
+
+    print("nrof_batches: {}, nrof_images: {}, batch_size: {}".format(nrof_batches, nrof_images, batch_size))
     for i in range(nrof_batches):
         feed_dict = {phase_train_placeholder:False, batch_size_placeholder:batch_size}
-        emb, lab = sess.run([embeddings, labels], feed_dict=feed_dict)
+        outputs = sess.run(probe_list, feed_dict=feed_dict)
+        emb = outputs[0]
+        lab = outputs[1]
+        tensors = zip(probe_list, outputs)
+        debug.tensor_hook(tensors, 'lfw_probe/pic_{}'.format(i))
+
         lab_array[lab] = lab
         emb_array[lab, :] = emb
         if i % 10 == 9:
@@ -125,9 +147,6 @@ def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phas
     else:
         embeddings = emb_array
 
-    np.save('./embeding_out', embeddings)
-    np.save('./label_out', lab_array)
-    np.save('./issame_out', actual_issame)
     assert np.array_equal(lab_array, np.arange(nrof_images))==True, 'Wrong labels used for evaluation, possibly caused by training examples left in the input pipeline'
     tpr, fpr, accuracy, val, val_std, far = lfw.evaluate(embeddings, actual_issame, nrof_folds=nrof_folds, distance_metric=distance_metric, subtract_mean=subtract_mean)
     
