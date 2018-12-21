@@ -1,6 +1,6 @@
-python /home/qiaojing/git-repo/facenet/src/validate_on_lfw.py \
+python ../src/validate_on_lfw.py \
 /home/qiaojing/git-repo/facenet/data/lfw_2pic \
-/dataset/models/tf-facenet/20180402-114759 \
+/home/qiaojing/tmp/for_facenet/saved_model_1pic/20181220-173136/ \
 --subtract_mean \
 --use_fixed_image_standardization \
 --lfw_pairs /home/qiaojing/git-repo/facenet/data/lfw_2pic/pairs.txt \
