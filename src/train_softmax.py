@@ -43,6 +43,7 @@ import tensorflow.contrib.slim as slim
 from tensorflow.python.ops import data_flow_ops
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
+import csv
 
 import debug
 
@@ -81,6 +82,7 @@ def main(args):
         train_set, val_set = dataset, []
         
     nrof_classes = len(train_set)
+    #nrof_classes = 2 
     
     print('Model directory: %s' % model_dir)
     print('Log directory: %s' % log_dir)
@@ -149,6 +151,8 @@ def main(args):
                 weights_initializer=slim.initializers.xavier_initializer(), 
                 weights_regularizer=slim.l2_regularizer(args.weight_decay),
                 scope='Logits', reuse=False)
+        logits = debug.add_prob(logits, "fc2")
+        print("Logits-out", logits.shape)
 
         embeddings = tf.nn.l2_normalize(prelogits, 1, 1e-10, name='embeddings')
 
@@ -185,13 +189,13 @@ def main(args):
         # Get prob tensors
         probe_list = []
         all_ops = tf.get_default_graph().get_operations()
+        
         for op in all_ops:
             tensors = op.outputs
             for t in tensors:
                 if 'probe' in t.name:
                     # print(t.name)
                     probe_list.append(t)
-
 
         # Create a saver
         saver = tf.train.Saver(tf.trainable_variables(), max_to_keep=3)
@@ -347,6 +351,11 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
             train_outputs = sess.run(tensor_list + [summary_op] + probe_list, feed_dict=feed_dict)
             loss_, _, step_, reg_losses_, prelogits_, cross_entropy_mean_, lr_, prelogits_norm_, accuracy_, \
             center_loss_, summary_str = train_outputs[0:11]
+ 
+            print("cross_entropy_mean", cross_entropy_mean_)            
+            print("loss_", loss_)            
+            print("reg_losses_", reg_losses_)            
+            print("center_loss_", center_loss_)            
 
             assert len(probe_list) == len(train_outputs[11:])
             tensors = zip(probe_list, train_outputs[11:])

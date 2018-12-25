@@ -77,6 +77,9 @@ def main(args):
             # Get output tensor
             embeddings = tf.get_default_graph().get_tensor_by_name("embeddings:0")
 
+            # Get input tensor (failed)
+            # img = tf.get_default_graph().get_tensor_by_name("input-image:0")
+
             # Get prob tensors
             probe_list = []
             all_ops = tf.get_default_graph().get_operations()
