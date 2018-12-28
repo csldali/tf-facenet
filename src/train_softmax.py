@@ -82,8 +82,7 @@ def main(args):
         train_set, val_set = dataset, []
         
     nrof_classes = len(train_set)
-    #nrof_classes = 2 
-    
+
     print('Model directory: %s' % model_dir)
     print('Log directory: %s' % log_dir)
     pretrained_model = None
@@ -111,8 +110,10 @@ def main(args):
         # Create a queue that produces indices into the image_list and label_list 
         labels = ops.convert_to_tensor(label_list, dtype=tf.int32)
         range_size = array_ops.shape(labels)[0]
+        #index_queue = tf.train.range_input_producer(range_size, num_epochs=None,
+        #                     shuffle=True, seed=None, capacity=32)
         index_queue = tf.train.range_input_producer(range_size, num_epochs=None,
-                             shuffle=True, seed=None, capacity=32)
+                             shuffle=False, seed=None, capacity=32)
         
         index_dequeue_op = index_queue.dequeue_many(args.batch_size*args.epoch_size, 'index_dequeue')
         
@@ -158,8 +159,13 @@ def main(args):
 
         # Norm for the prelogits
         eps = 1e-4
-        prelogits_norm = tf.reduce_mean(tf.norm(tf.abs(prelogits)+eps, ord=args.prelogits_norm_p, axis=1))
-        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, prelogits_norm * args.prelogits_norm_loss_factor)
+        norm_loss = tf.norm(tf.abs(prelogits)+eps, ord=args.prelogits_norm_p, axis=1)
+        norm_loss = debug.add_prob(norm_loss, "norm_loss_probe")
+
+        prelogits_norm = tf.reduce_mean(norm_loss)
+        prelogits_norm_scaled = prelogits_norm * args.prelogits_norm_loss_factor
+        prelogits_norm_scaled = debug.add_prob(prelogits_norm_scaled, "prelogits_norm_scaled_probe")
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, prelogits_norm_scaled)
 
         # Add center loss
         prelogits_center_loss, _ = facenet.center_loss(prelogits, label_batch, args.center_loss_alfa, nrof_classes)
@@ -172,15 +178,20 @@ def main(args):
         # Calculate the average cross entropy loss across the batch
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=label_batch, logits=logits, name='cross_entropy_per_example')
+        label_batch = debug.add_prob(label_batch, "label_batch_probe")
+        cross_entropy = debug.add_prob(cross_entropy, "cross_entropy_probe")
         cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
-        tf.add_to_collection('losses', cross_entropy_mean)
-        
+        cross_entropy_mean = debug.add_prob(cross_entropy_mean, "cross_entropy_mean_probe")
+        tf.add_to_collection('losses', cross_entropy_mean) 
+
         correct_prediction = tf.cast(tf.equal(tf.argmax(logits, 1), tf.cast(label_batch, tf.int64)), tf.float32)
         accuracy = tf.reduce_mean(correct_prediction)
         
         # Calculate the total losses
         regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+
         total_loss = tf.add_n([cross_entropy_mean] + regularization_losses, name='total_loss')
+        total_loss = debug.add_prob(total_loss, "total_loss")
 
         # Build a Graph that trains the model with one batch of examples and updates the model parameters
         train_op = facenet.train(total_loss, global_step, args.optimizer, 
@@ -560,7 +571,7 @@ def parse_arguments(argv):
         help='Norm to use for prelogits norm loss.', default=1.0)
     parser.add_argument('--prelogits_hist_max', type=float,
         help='The max value for the prelogits histogram.', default=10.0)
-    parser.add_argument('--optimizer', type=str, choices=['ADAGRAD', 'ADADELTA', 'ADAM', 'RMSPROP', 'MOM'],
+    parser.add_argument('--optimizer', type=str, choices=['ADAGRAD', 'ADADELTA', 'ADAM', 'RMSPROP', 'MOM', 'SGD'],
         help='The optimization algorithm to use', default='ADAGRAD')
     parser.add_argument('--learning_rate', type=float,
         help='Initial learning rate. If set to a negative value a learning rate ' +

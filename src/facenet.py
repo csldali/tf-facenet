@@ -181,6 +181,8 @@ def train(total_loss, global_step, optimizer, learning_rate, moving_average_deca
             opt = tf.train.RMSPropOptimizer(learning_rate, decay=0.9, momentum=0.9, epsilon=1.0)
         elif optimizer=='MOM':
             opt = tf.train.MomentumOptimizer(learning_rate, 0.9, use_nesterov=True)
+        elif optimizer == 'SGD':
+            opt = tf.train.GradientDescentOptimizer(learning_rate)
         else:
             raise ValueError('Invalid optimization algorithm')
     

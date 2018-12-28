@@ -145,7 +145,7 @@ def inference(images, keep_probability, phase_train=True,
     
     with slim.arg_scope([slim.conv2d, slim.fully_connected],
                         weights_initializer=slim.initializers.xavier_initializer(), 
-                        weights_regularizer=slim.l2_regularizer(weight_decay),
+                        # weights_regularizer=slim.l2_regularizer(weight_decay),
                         normalizer_fn=slim.batch_norm,
                         normalizer_params=batch_norm_params):
         return inception_resnet_v1(images, is_training=phase_train,
@@ -180,7 +180,8 @@ def inception_resnet_v1(inputs, is_training=True,
 
                 inputs = debug.add_prob(inputs, 'input-image')
                 # 149 x 149 x 32
-                net = slim.conv2d(inputs, 32, 3, stride=2, padding='VALID',
+                net = slim.conv2d(inputs, 32, 3, 
+                                  stride=2, padding='VALID',
                                   scope='Conv2d_1a_3x3')
                 end_points['Conv2d_1a_3x3'] = net
                 print('Conv2d_1a_3x3', net.get_shape())
