@@ -6,15 +6,15 @@ python src/train_softmax.py \
 --model_def models.inception_resnet_v1 \
 --optimizer ADAM \
 --learning_rate -1 \
---max_nrof_epochs 1 \
---keep_probability 0.8 \
+--max_nrof_epochs 10 \
+--keep_probability 1 \
 --random_crop \
 --random_flip \
 --use_fixed_image_standardization \
 --learning_rate_schedule_file data/learning_rate_schedule_classifier_casia.txt \
 --weight_decay 5e-4 \
 --embedding_size 512 \
---validation_set_split_ratio 0.05 \
+--validation_set_split_ratio 0.0 \
 --validate_every_n_epochs 10 \
 --prelogits_norm_loss_factor 5e-4 \
 --epoch_size=1 \
