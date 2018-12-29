@@ -1,0 +1,19 @@
+python ../src/train_softmax.py \
+--pretrained_model /home/qiaojing/tmp/for_facenet/saved_model_5pic/20181224-185135/model-20181224-185135.ckpt-1 \
+--data_dir /dataset/casia-webface/webface-5pic-160 \
+--logs_base_dir ./output_dir/logs/facenet/ \
+--models_base_dir ./output_dir/models/facenet/ \
+--image_size 160 \
+--model_def models.inception_resnet_v1 \
+--optimizer ADAM \
+--learning_rate -1 \
+--max_nrof_epochs 2 \
+--keep_probability 1.0 \
+--use_fixed_image_standardization \
+--learning_rate_schedule_file ../data/learning_rate_schedule_classifier_casia.txt \
+--weight_decay 5e-4 \
+--embedding_size 512 \
+--validation_set_split_ratio 0.0 \
+--prelogits_norm_loss_factor 5e-4 \
+--epoch_size=1 \
+--batch_size=5

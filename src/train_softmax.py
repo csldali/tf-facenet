@@ -103,9 +103,12 @@ def main(args):
         
         # Get a list of image paths and their labels
         image_list, label_list = facenet.get_image_paths_and_labels(train_set)
+        print('^-^'.center(30, '-'))
+        print("Train image and label:", image_list, label_list)
         assert len(image_list)>0, 'The training set should not be empty'
         
         val_image_list, val_label_list = facenet.get_image_paths_and_labels(val_set)
+
 
         # Create a queue that produces indices into the image_list and label_list 
         labels = ops.convert_to_tensor(label_list, dtype=tf.int32)
@@ -124,7 +127,8 @@ def main(args):
         labels_placeholder = tf.placeholder(tf.int32, shape=(None,1), name='labels')
         control_placeholder = tf.placeholder(tf.int32, shape=(None,1), name='control')
         
-        nrof_preprocess_threads = 4
+        # nrof_preprocess_threads = 4
+        nrof_preprocess_threads = 1
         input_queue = data_flow_ops.FIFOQueue(capacity=2000000,
                                     dtypes=[tf.string, tf.int32, tf.int32],
                                     shapes=[(1,), (1,), (1,)],
@@ -355,7 +359,7 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
         feed_dict = {learning_rate_placeholder: lr, phase_train_placeholder:True, batch_size_placeholder:args.batch_size}
         tensor_list = [loss, train_op, step, reg_losses, prelogits, cross_entropy_mean, learning_rate, prelogits_norm,
                        accuracy, prelogits_center_loss]
-        if batch_number % 100 == 0:
+        if batch_number % 1 == 0:
             # loss_, _, step_, reg_losses_, prelogits_, cross_entropy_mean_, lr_, prelogits_norm_, accuracy_, \
             # center_loss_, summary_str = sess.run(tensor_list + [summary_op], feed_dict=feed_dict)
 
@@ -370,7 +374,7 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
 
             assert len(probe_list) == len(train_outputs[11:])
             tensors = zip(probe_list, train_outputs[11:])
-            debug.tensor_hook(tensors, 'train_probe/pic_{}'.format(batch_number))
+            debug.tensor_hook(tensors, 'train_probe/epoch_{}/pic_{}'.format(epoch, batch_number))
 
             summary_writer.add_summary(summary_str, global_step=step_)
         else:
