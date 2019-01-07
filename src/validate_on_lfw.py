@@ -61,7 +61,8 @@ def main(args):
             control_placeholder = tf.placeholder(tf.int32, shape=(None,1), name='control')
             phase_train_placeholder = tf.placeholder(tf.bool, name='phase_train')
  
-            nrof_preprocess_threads = 4
+            #nrof_preprocess_threads = 4
+            nrof_preprocess_threads = 1
             image_size = (args.image_size, args.image_size)
             eval_input_queue = data_flow_ops.FIFOQueue(capacity=2000000,
                                         dtypes=[tf.string, tf.int32, tf.int32],
@@ -103,6 +104,7 @@ def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phas
         embeddings, labels, image_paths, actual_issame, batch_size, nrof_folds, distance_metric, subtract_mean, use_flipped_images, use_fixed_image_standardization, probe_list):
     # Run forward pass to calculate embeddings
     print('Runnning forward pass on LFW images')
+    print("lfw images: ", image_paths)
     
     # Enqueue one epoch of image paths and labels
     nrof_embeddings = len(actual_issame)*2  # nrof_pairs * nrof_images_per_pair
