@@ -134,7 +134,7 @@ def inference(images, keep_probability, phase_train=True,
               bottleneck_layer_size=128, weight_decay=0.0, reuse=None):
     batch_norm_params = {
         # Decay for the moving averages.
-        'decay': 0.995,
+        'decay': 0,
         # epsilon to prevent 0s in variance.
         'epsilon': 0.001,
         # force in-place updates of mean and variance estimates
@@ -280,8 +280,21 @@ def inception_resnet_v1(inputs, is_training=True,
                     print('PreLogitsFlatten', net.get_shape())
                     net = debug.add_prob(net, 'PreLogitsFlatten')
 
+                # fc_batch_norm_params = {
+                #     # Decay for the moving averages.
+                #     'decay': 0,
+                #     # epsilon to prevent 0s in variance.
+                #     'epsilon': 0.001,
+                #     # force in-place updates of mean and variance estimates
+                #     'updates_collections': None,
+                #     # Moving averages ends up in the trainable variables collection
+                #     'variables_collections': [ tf.GraphKeys.TRAINABLE_VARIABLES ],
+                # }
+                # net = slim.fully_connected(net, bottleneck_layer_size, normalizer_params=fc_batch_norm_params, activation_fn=None, 
+                #                             biases_initializer=None, scope='Bottleneck', reuse=False)
+                
                 net = slim.fully_connected(net, bottleneck_layer_size, activation_fn=None, 
-                        scope='Bottleneck', reuse=False)
+                            biases_initializer=None, scope='Bottleneck', reuse=False)
                 print('Bottleneck-out', net.get_shape())
                 net = debug.add_prob(net, 'Bottleneck-out')
   

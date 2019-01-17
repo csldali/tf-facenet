@@ -213,7 +213,7 @@ def main(args):
                     probe_list.append(t)
 
         # Create a saver
-        saver = tf.train.Saver(tf.trainable_variables(), max_to_keep=3)
+        saver = tf.train.Saver(tf.trainable_variables(), max_to_keep=100)
 
         # Build the summary operation based on the TF collection of Summaries.
         summary_op = tf.summary.merge_all()
