@@ -7,7 +7,7 @@ python ../src/train_softmax.py \
 --model_def models.inception_resnet_v1 \
 --optimizer ADAM \
 --learning_rate -1 \
---max_nrof_epochs 5 \
+--max_nrof_epochs 20 \
 --keep_probability 1.0 \
 --use_fixed_image_standardization \
 --learning_rate_schedule_file ../data/learning_rate_schedule_classifier_casia.txt \
