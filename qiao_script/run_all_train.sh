@@ -21,7 +21,7 @@ python ../src/train_softmax.py \
 --gpu_memory_fraction=0.9 \
 --lfw_dir /dataset/lfw/lfw_mtcnnpy_160 \
 --lfw_distance_metric 1 \
---lfw_use_flipped_images \
 --lfw_subtract_mean \
---lfw_pairs ../data/pairs.txt
-
+--lfw_nrof_folds 10 \
+--use_fixed_image_standardization \
+--lfw_pairs /dataset/lfw/lfw_mtcnnpy_160/pairs.txt

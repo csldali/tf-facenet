@@ -342,6 +342,8 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
         stat['prelogits_hist'][epoch-1,:] += np.histogram(np.minimum(np.abs(prelogits_), prelogits_hist_max), bins=1000, range=(0.0, prelogits_hist_max))[0]
         
         duration = time.time() - start_time
+        IdentityLoss = cross_entropy_mean_ + reg_losses_[-2]
+        print("IdentityLoss:%2.3f"%(IdentityLoss))
         print('Epoch: [%d][%d/%d]\tTime %.3f\tLoss %2.3f\tXent %2.3f\tRegLoss %2.3f\tAccuracy %2.3f\tLr %2.5f\tCl %2.3f' %
               (epoch, batch_number+1, args.epoch_size, duration, loss_, cross_entropy_mean_, np.sum(reg_losses_), accuracy_, lr_, center_loss_))
         batch_number += 1
